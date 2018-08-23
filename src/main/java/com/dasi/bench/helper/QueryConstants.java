@@ -5,6 +5,8 @@
  */
 package com.dasi.bench.helper;
 
+import com.dasi.bench.interfaces.Hidden;
+
 /**
  *
  * @author obsidiam
@@ -18,4 +20,14 @@ public class QueryConstants {
     final public static String ORDER_BY_TEST = "SELECT id FROM test ORDER BY id ASC;";
     final public static String DELETE_TEST = "delete from test where id=";//just part of a statement, needs ending before querying
     final public static String DROP_TEST = "drop table test;";
+    
+    @Hidden
+    final public static String PIKA = "       _ _         \n" +
+                                        "      (_) |        \n" +
+                                        " _ __  _| | ____ _ \n" +
+                                        "| '_ \\| | |/ / _` |\n" +
+                                        "| |_) | |   < (_| |\n" +
+                                        "| .__/|_|_|\\_\\__,_|\n" +
+                                        "| |                \n" +
+                                        "|_|                ";
 }

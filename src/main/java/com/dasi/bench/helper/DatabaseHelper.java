@@ -1,13 +1,8 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package com.dasi.bench.helper;
 
-import com.dasi.bench.PoolVal;
 import com.dasi.bench.config.Config;
 import com.dasi.bench.output.OutputController;
+import com.dasi.bench.util.SqlUtil;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -28,22 +23,27 @@ final public class DatabaseHelper {//Use singleton, no need to make more than on
     private ServiceBuilder serviceBuilder;
     private Connection connection;
     private static Config runningConfig;
-
+    private String dbURL;
+    private Properties dbProps;
     
     private DatabaseHelper(){
-        
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
             System.out.println("# FAIL [Driver]");
-	    e.printStackTrace();
-            return;
         }
-        loadConfig();
+        //loadConfig();
     }
     
     public static synchronized DatabaseHelper getHelperInstance(Config conf){
         runningConfig = conf;
+        if(databaseHelperInstance == null){
+            databaseHelperInstance = new DatabaseHelper();
+        }
+        return databaseHelperInstance;
+    }
+    
+    public static synchronized DatabaseHelper getHelperInstance(){//Unsafe getter for an instance, will work only if method DatabaseHelper#getHelperInstance(Config config) was reffered earlier.
         if(databaseHelperInstance == null){
             databaseHelperInstance = new DatabaseHelper();
         }
@@ -59,24 +59,54 @@ final public class DatabaseHelper {//Use singleton, no need to make more than on
     public Future executeTest(){
         this.serviceBuilder = new ServiceBuilder();
      
-        this.serviceBuilder.prepareExecutorService(() -> {return PoolVal.sqlTest(connection, false, false);});
+        this.serviceBuilder.prepareExecutorService(() -> {
+            SqlUtil.shouldExecute = true;
+            boolean result;
+            result = SqlUtil.sqlTest(false, false);
+            return result;
+        });
         return this.serviceBuilder.getServiceResult();//as this is a Future class object we can get it here and just wait on it checking its state for the result.
     }
     
     public boolean cancelTestExecution(){
         return (this.serviceBuilder.cancelExecution() == 0);
     }
+    
+    public void terminateForever(){
+        this.serviceBuilder.kill();
+    }
 
     private void loadConfig() {
-        String dbURL = "jdbc:postgresql://"+runningConfig.ipProperty().get()+":"+runningConfig.portProperty().get()+"/"+runningConfig.databaseNameProperty().get();
-        Properties dbProps = new Properties();
+        dbURL = "jdbc:postgresql://"+runningConfig.ipProperty().get()+":"+runningConfig.portProperty().get()+"/"+runningConfig.databaseNameProperty().get();
+        dbProps = new Properties();
 	dbProps.setProperty("user",runningConfig.usernameProperty().get());
 	dbProps.setProperty("password",runningConfig.passProperty().get());
 	dbProps.setProperty("ssl","false");
+        //initConnection();
+    }
+    
+    public Connection initConnection(){
+        if(connection != null){
+            return connection;
+        }
+            
         try {
             connection = DriverManager.getConnection(dbURL, dbProps);
         } catch (SQLException ex) {
-            OutputController.getControllerInstance().printMessage(new LogRecord(Level.SEVERE, ex.getLocalizedMessage()));
+            OutputController.getControllerInstance().printMessage(new LogRecord(Level.SEVERE, "# FATAL - RESULT: "+ex.getLocalizedMessage()));
+        }
+        
+        return connection;
+    }
+    
+    public void disconnect(){
+        try {
+            if(connection != null){
+                connection.close();
+                connection = null;
+            }
+        } catch (SQLException ex) {
+            OutputController.getControllerInstance().printMessage(new LogRecord(Level.SEVERE, "# FATAL - RESULT: "+ex.getLocalizedMessage()));
         }
     }
     
@@ -93,12 +123,18 @@ final public class DatabaseHelper {//Use singleton, no need to make more than on
         }
         
         private Future getServiceResult(){//okay, so now we are Back in the future?
-            localInstance.shutdown();
             return futureInstance;
         }
         
-        private int cancelExecution(){//It returns just size of list of awaiting tasks, and because contract of this helper states that one test on execution so this value informs if execution ever started.
-            return localInstance.shutdownNow().size();
+        private int cancelExecution(){//It returns just if Future class object for this ServiceBuilder was cancelled.
+            boolean cancelled = this.futureInstance.cancel(true);
+            SqlUtil.shouldExecute = !this.futureInstance.isCancelled();
+            return cancelled  ? 0 : 1;
+        }
+        
+        private void kill(){
+            this.futureInstance.cancel(true);
+            this.localInstance.shutdownNow();
         }
     }
 }

@@ -15,9 +15,13 @@ public enum BaseCommand {
     VERSION("printVersion"),
     SET_PORT("setPort"),
     SET_IP("setIp"),
-    SHOW_CURRENT_DB_CONF("showCurrentDatabaseConfiguration"),
+    SHOW_CURRENT_DB_CONF("showConfiguration"),
     SHOW_CURRENT_IP("showCurrentIp"),
-    SET_URL("setUrl");
+    SET_URL("setUrl"),
+    AVG_FOR_ALL("averageForAll"),
+    FLUSH_ABGS("flushAverages"),
+    QUIT("quit"),
+    WQ("wq");
     
     private String flag;
     
