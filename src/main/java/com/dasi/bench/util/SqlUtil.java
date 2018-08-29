@@ -17,7 +17,8 @@ import java.util.logging.Logger;
 
 /**
  * @version 0.2.1
- * @author: Aleksander Wrobel
+ * @author  Aleksander Wrobel
+ * @author  Obsidiam
 */
 final public class SqlUtil {
   public static boolean shouldExecute = true;
