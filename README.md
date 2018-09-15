@@ -27,3 +27,14 @@ For example: printHelp is a full command and \h or \? or :h are aliases, test th
 # Easter egg
 There is one or two...? Maybe three... whatever, none of them is really dangerous until you have less then 3GBs of RAM onf the system...
 
+
+# Development
+
+PoolVal2 as it is, does not contain public API or sth like this, but you can always add your own classes with your own logic.
+Then just add those three things to make it work:
+* add method which body will be using you code in InputController(doesnt matter if public or private as I did it),
+* add flag with any name, important is that predefined value of the flag **MUST** be a name of the method in InputController,
+* _optional_: Add record to the _aliases_ map in InputController so your logic will be accessible using aliases such as: \h, :h etc.
+And its all, it just works.
+
+Any upgrades, additional features, bug fixes and so on will be very appreciated.
